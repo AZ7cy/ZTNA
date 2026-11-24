@@ -293,4 +293,4 @@ def _save_gui_preferences(data):
     path = _gui_preferences_path(); os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f: json.dump(safe, f)
-    os.replace(tmp, path)
+    _replace_file(tmp, path)

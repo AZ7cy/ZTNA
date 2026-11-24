@@ -120,7 +120,7 @@ def _atomic_json_replace(path, data):
             json.dump(data, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
+        _replace_file(tmp, path)
         _fsync_dir(path)
     except BaseException:
         try: os.unlink(tmp)

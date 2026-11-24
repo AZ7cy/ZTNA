@@ -386,6 +386,15 @@ if FASTAPI_AVAILABLE:
                 _ENT_ANCHOR_STATE["pending"]=None
             logger.warning("enterprise audit external anchor reconciled after outage at entry %s",checkpoint[0])
 
+    def _read_text_shared(path, attempts=40, delay=0.025):
+        """Read a small ASCII file. On Windows, opening it fails with PermissionError for the moment another thread
+        replaces it, which is not evidence of tampering: retry briefly (as _replace_file does for the writer)."""
+        for attempt in range(attempts):
+            try: return Path(path).read_text(encoding="ascii")
+            except PermissionError:
+                if os.name != "nt" or attempt == attempts - 1: raise
+                time.sleep(delay)
+
     def _enterprise_anchor_mac(c,h):
         return hmac.new(ENTERPRISE_AUDIT_SECRET.encode(),f"{c}:{h}".encode(),hashlib.sha256).hexdigest()
 
@@ -394,7 +403,7 @@ if FASTAPI_AVAILABLE:
         path=ENTERPRISE_AUDIT_EXTERNAL_ANCHOR_FILE
         if not os.path.exists(path): return None
         try:
-            parts=Path(path).read_text(encoding="ascii").strip().split(":")
+            parts=_read_text_shared(path).strip().split(":")
             if len(parts)!=3: raise ValueError("malformed anchor")
             count,h,m=int(parts[0]),parts[1],parts[2]
             if count<0 or not hmac.compare_digest(m,_enterprise_anchor_mac(count,h)): raise ValueError("invalid anchor MAC")
@@ -435,7 +444,7 @@ if FASTAPI_AVAILABLE:
             fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
             try:
                 with os.fdopen(fd,"w",encoding="ascii") as f: f.write(f"{entries}:{last_hash}:{mac}"); f.flush(); os.fsync(f.fileno())
-                os.replace(tmp,path); _fsync_dir(path)
+                _replace_file(tmp,path); _fsync_dir(path)
             except BaseException:
                 try: os.unlink(tmp)
                 except OSError: pass

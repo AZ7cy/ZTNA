@@ -19,22 +19,25 @@ def _audit_segment_files():
 def _rotate_audit_locked():
     prefix=os.path.basename(AUDIT_FILE)+"."
     existing=[int(n[len(prefix):]) for n in os.listdir(DATA_DIR) if n.startswith(prefix) and n[len(prefix):].isdigit()]
-    if len(existing)>=int(os.environ.get("ZTNA_MAX_AUDIT_SEGMENTS","32")): raise AuditFull("audit segment limit reached; archive segments before continuing")
+    if len(existing)>=_env_int("ZTNA_MAX_AUDIT_SEGMENTS",32,1,100000,error_type=AuditFull): raise AuditFull("audit segment limit reached; archive segments before continuing")
     if AUDIT["fh"] is not None:
         AUDIT["fh"].close(); AUDIT["fh"]=None
     nums=[]
     prefix=os.path.basename(AUDIT_FILE)+"."
     for name in os.listdir(DATA_DIR):
         if name.startswith(prefix) and name[len(prefix):].isdigit(): nums.append(int(name[len(prefix):]))
-    for i in sorted(nums,reverse=True): os.replace(f"{AUDIT_FILE}.{i}",f"{AUDIT_FILE}.{i+1}")
-    if os.path.exists(AUDIT_FILE): os.replace(AUDIT_FILE,AUDIT_FILE+".1")
+    # Highest number first, so an interrupted rotation still leaves the segments in chain order.
+    for i in sorted(nums,reverse=True): _replace_file(f"{AUDIT_FILE}.{i}",f"{AUDIT_FILE}.{i+1}")
+    if os.path.exists(AUDIT_FILE): _replace_file(AUDIT_FILE,AUDIT_FILE+".1")
     try:
         fd=os.open(DATA_DIR,os.O_RDONLY); os.fsync(fd); os.close(fd)
     except OSError: pass
     AUDIT["size"]=0
 
 def _audit_hash(prev, event):
-    payload=json.dumps(event,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+    # surrogatepass: a lone surrogate (legal in JSON, e.g. "\ud800" in a request body) would otherwise raise here and
+    # the entry could not be written at all. Every other string encodes to exactly the same bytes as before.
+    payload=json.dumps(event,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8","surrogatepass")
     return hmac.new(AUDIT_ANCHOR_KEY, prev.encode()+b"|"+payload, hashlib.sha256).hexdigest()
 
 def _anchor_value(entries,last_hash):
@@ -48,7 +51,7 @@ def _write_anchor_locked(entries,last_hash):
     try:
         with os.fdopen(fd,"w",encoding="utf-8") as f:
             json.dump(data,f,separators=(",",":")); f.flush(); os.fsync(f.fileno())
-        os.replace(tmp,AUDIT_ANCHOR_FILE); _fsync_dir(AUDIT_ANCHOR_FILE)
+        _replace_file(tmp,AUDIT_ANCHOR_FILE); _fsync_dir(AUDIT_ANCHOR_FILE)
     except BaseException:
         try: os.unlink(tmp)
         except OSError: pass
@@ -84,7 +87,7 @@ def _external_anchor_update(entries,last_hash):
         fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
         try:
             with os.fdopen(fd,"w",encoding="ascii") as f: f.write(f"{entries}:{last_hash}:{mac}"); f.flush(); os.fsync(f.fileno())
-            os.replace(tmp,path); _fsync_dir(path)
+            _replace_file(tmp,path); _fsync_dir(path)
         except BaseException:
             try: os.unlink(tmp)
             except OSError: pass
@@ -115,30 +118,72 @@ def audit_allowed(source,kind,limit=60,window=10):
         if len(q)>=limit: return False
         q.append(now); return True
 
+def _discard_failed_audit_write_locked():
+    """After a failed append: drop the writer WITHOUT flushing what it still buffers, then cut the file back to the
+    last complete entry. Otherwise a partial line (or a line whose hash never became AUDIT["prev"]) stays in the
+    file and every later entry breaks the chain for good."""
+    fh, AUDIT["fh"] = AUDIT.get("fh"), None
+    if fh is not None:
+        try: fh.buffer.raw.close()       # closes the descriptor; the buffered bytes can no longer reach the file
+        except Exception: pass
+    try:
+        with open(AUDIT_FILE, "r+b") as f:
+            if os.fstat(f.fileno()).st_size > AUDIT.get("size", 0): f.truncate(AUDIT.get("size", 0))
+    except OSError as exc:
+        logger.error("could not roll back a failed audit write: %s", exc)
+
+def _sync_audit_anchors_locked():
+    """Bring both anchors up to the last durable entry (after an earlier anchor write failed)."""
+    try:
+        _external_anchor_update(AUDIT["entries"], AUDIT["prev"])
+        _write_anchor_locked(AUDIT["entries"], AUDIT["prev"])
+    except OSError as exc:
+        raise AuditFull(f"audit anchor unavailable: {exc}") from None
+    AUDIT["anchor_lag"] = False
+
 def audit(**kw):
     kw["ts"] = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
     kw["hour"] = now_hour(); kw["resource"] = audit_resource(kw.get("resource"))
     with LOCK:
+        # The anchors may trail the log by at most one entry (that is what startup recovery repairs), so an entry
+        # whose anchor update failed must be anchored before anything else is appended.
+        if AUDIT.get("anchor_lag"): _sync_audit_anchors_locked()
         kw["prev"] = AUDIT["prev"]
         kw["hash_alg"] = "HMAC-SHA256"
         kw["hash"] = _audit_hash(kw["prev"], {k:v for k,v in kw.items() if k!="hash"})
-        if AUDIT["entries"] and (not os.path.exists(AUDIT_FILE) or os.path.getsize(AUDIT_FILE) < AUDIT.get("size",0)):
-            raise AuditTamper("audit log changed while running")
-        if os.path.exists(AUDIT_FILE) and os.path.getsize(AUDIT_FILE) >= MAX_AUDIT_BYTES:
-            _rotate_audit_locked()
-        if AUDIT["fh"] is None:
-            fd=os.open(AUDIT_FILE,os.O_WRONLY|os.O_APPEND|os.O_CREAT,0o600)
-            try: os.chmod(AUDIT_FILE,0o600)
-            except OSError: pass
-            AUDIT["fh"]=os.fdopen(fd,"a",encoding="utf-8")
+        line = json.dumps(kw,separators=(",",":"))+"\n"
+        # Everything up to the write raises AuditFull/AuditTamper only: callers roll back on exactly those, and a raw
+        # OSError (Windows refusing to rotate a segment that the verifier has open, disk errors) used to skip that.
         try:
-            AUDIT["fh"].write(json.dumps(kw,separators=(",",":"))+"\n"); AUDIT["fh"].flush(); os.fsync(AUDIT["fh"].fileno())
+            # size 0 with no file is the moment right after a rotation (or a restart that followed one), not tampering.
+            if AUDIT["entries"] and AUDIT.get("size",0) and (not os.path.exists(AUDIT_FILE) or os.path.getsize(AUDIT_FILE) < AUDIT.get("size",0)):
+                raise AuditTamper("audit log changed while running")
+            if os.path.exists(AUDIT_FILE) and os.path.getsize(AUDIT_FILE) >= MAX_AUDIT_BYTES:
+                _rotate_audit_locked()
+            if AUDIT["fh"] is None:
+                fd=os.open(AUDIT_FILE,os.O_WRONLY|os.O_APPEND|os.O_CREAT,0o600)
+                try: os.chmod(AUDIT_FILE,0o600)
+                except OSError: pass
+                AUDIT["fh"]=os.fdopen(fd,"a",encoding="utf-8")
         except OSError as exc:
-            raise AuditFull(f"audit write failed: {exc}")
-        AUDIT["size"]=os.path.getsize(AUDIT_FILE)
+            raise AuditFull(f"audit log unavailable: {exc}") from None
+        try:
+            AUDIT["fh"].write(line); AUDIT["fh"].flush(); os.fsync(AUDIT["fh"].fileno())
+            size=os.path.getsize(AUDIT_FILE)
+        except OSError as exc:
+            _discard_failed_audit_write_locked()
+            raise AuditFull(f"audit write failed: {exc}") from None
+        AUDIT["size"]=size
         AUDIT["prev"]=kw["hash"]; AUDIT["entries"] += 1; LOG.appendleft(kw)
-        _external_anchor_update(AUDIT["entries"],AUDIT["prev"])
-        _write_anchor_locked(AUDIT["entries"],AUDIT["prev"])
+        # The entry is durable from here on, so the caller's action stands. A failed anchor update is repaired by the
+        # next audit() before it appends (or by startup recovery, which accepts a one-entry lag), not reported as
+        # "not recorded" for an action that the log already holds.
+        try:
+            _external_anchor_update(AUDIT["entries"],AUDIT["prev"])
+            _write_anchor_locked(AUDIT["entries"],AUDIT["prev"])
+        except OSError as exc:
+            AUDIT["anchor_lag"]=True
+            logger.error("audit entry %s is recorded but its anchor could not be updated (%s); the next entry waits until it is", AUDIT["entries"], exc)
         if kw.get("resource") in RESOURCES and not _is_exception_record(kw):
             db_access(kw.get("user"),kw.get("device"),kw.get("resource"),kw.get("decision"),kw.get("risk",0),kw.get("reasons",[]),kw.get("signals",[]))
             detect_alerts(kw)
@@ -172,11 +217,27 @@ def _external_anchor_snapshot_matches(raw,entries,last_hash):
         return hmac.compare_digest(mac,expected)
     except Exception: return False
 
+def _open_shared_read(path):
+    """Open for binary reading. On Windows also allow the file to be renamed while it is open (FILE_SHARE_DELETE), as
+    POSIX always does: the verifier keeps every segment open during its scan, and segment rotation must not fail
+    because of that. Falls back to a plain open() if the Windows call is unavailable."""
+    if os.name == "nt":
+        try:
+            import _winapi, msvcrt
+            handle = _winapi.CreateFile(os.fspath(path), _winapi.GENERIC_READ, 0x1 | 0x2 | 0x4, 0, _winapi.OPEN_EXISTING, 0, 0)
+        except (ImportError, AttributeError):
+            return open(path, "rb")
+        except OSError as exc:
+            if exc.winerror == 2: raise FileNotFoundError(2, "No such file or directory", path) from None   # ERROR_FILE_NOT_FOUND
+            raise
+        return open(msvcrt.open_osfhandle(handle, os.O_RDONLY), "rb")
+    return open(path, "rb")
+
 def _open_audit_snapshot_locked():
     handles=[]
     try:
         for path in _audit_segment_files():
-            fh=open(path,"rb")
+            fh=_open_shared_read(path)
             size=os.fstat(fh.fileno()).st_size
             handles.append((path,fh,size))
         local_raw=_read_anchor_snapshot(AUDIT_ANCHOR_FILE)
@@ -202,7 +263,9 @@ def _scan_audit_handles(handles,tail_limit=0):
                 return {"ok":False,"broken_at":count,"entries":count,"reason":"partial audit line","last_hash":prev,"previous_hash":previous_hash,"tail":tail or []}
             consumed+=len(raw)
             try:
-                event=json.loads(raw.decode("utf-8")); h=event.pop("hash")
+                event=json.loads(raw.decode("utf-8"))
+                if not isinstance(event,dict): raise ValueError("audit entry is not a JSON object")   # e.g. a tampered "0"
+                h=event.pop("hash")
                 if event.get("prev")!=prev:
                     return {"ok":False,"broken_at":count,"entries":count+1,"last_hash":prev,"previous_hash":previous_hash,"tail":tail or []}
                 if event.get("hash_alg")=="HMAC-SHA256": expected=_audit_hash(prev,event); seen_hmac=True
@@ -214,7 +277,7 @@ def _scan_audit_handles(handles,tail_limit=0):
                 previous_hash=prev; prev=h; count+=1
                 if tail is not None:
                     event["hash"]=h; tail.append(event)
-            except (ValueError,KeyError,TypeError,UnicodeDecodeError):
+            except (ValueError,KeyError,TypeError,UnicodeDecodeError,RecursionError):      # RecursionError: deeply nested JSON
                 return {"ok":False,"broken_at":count,"entries":count+1,"last_hash":prev,"previous_hash":previous_hash,"tail":tail or []}
     return {"ok":True,"entries":count,"last_hash":prev,"previous_hash":previous_hash,"tail":tail or []}
 
@@ -431,6 +494,6 @@ def archive_and_reset_audit():
         arch = os.path.join(DATA_DIR, "audit_archive_" + time.strftime("%Y%m%d-%H%M%S")); os.makedirs(arch, mode=0o700, exist_ok=True)
         for pth in list(_audit_segment_files()) + [AUDIT_ANCHOR_FILE, AUDIT_EXTERNAL_ANCHOR_FILE]:
             if os.path.exists(pth): shutil.move(pth, os.path.join(arch, os.path.basename(pth)))
-        AUDIT["prev"] = "0" * 64; AUDIT["entries"] = 0; AUDIT["size"] = 0; LOG.clear()
+        AUDIT["prev"] = "0" * 64; AUDIT["entries"] = 0; AUDIT["size"] = 0; AUDIT["anchor_lag"] = False; LOG.clear()
     audit(user="admin", device=None, resource="audit-reset", decision="POLICY", reasons=[f"damaged audit log archived to {os.path.basename(arch)}; new chain started"])
     return arch

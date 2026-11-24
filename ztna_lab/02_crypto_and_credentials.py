@@ -134,6 +134,17 @@ def _fsync_dir(path):
         finally: os.close(fd)
     except OSError: pass
 
+def _replace_file(src, dst, attempts=40, delay=0.025):
+    """os.replace() that survives a short-lived reader on Windows. There, renaming onto (or away from) a file that
+    another handle has open (the audit verifier, an antivirus or backup scan) fails with PermissionError instead of
+    replacing it underneath the reader, so retry for up to about a second before giving up."""
+    for attempt in range(attempts):
+        try:
+            os.replace(src, dst); return
+        except PermissionError:
+            if os.name != "nt" or attempt == attempts - 1: raise
+            time.sleep(delay)
+
 def _save_totp_state_locked():
     _atomic_json_replace(TOTP_STATE_FILE,LAST_TOTP)
 
