@@ -1,0 +1,25 @@
+MERGE NOTES
+===========
+
+Main application:
+- `ztna_lab_v2.py` from the native desktop dual-portal improvements package.
+- Retains the employee/manager portal workflow, authentication and device checks,
+  sign-in approval queue, access exceptions, audit chain, and manager controls.
+- Uses fresh runtime data on first launch; no runtime database, credential hash
+  file, TOTP wrapping key, JWT key, or self-test data is bundled.
+
+Source material:
+- `ztna_lab_with_credentials.zip` was used to compare the working authentication,
+  access-policy, device-posture, and audit behavior.
+- `ztna_native_desktop_gui_improvements.zip` supplied the separate native employee
+  and manager portals and the newer manager actions.
+- The static account database/key material from the credentials archive was not
+  copied, to avoid shipping secrets. Employee credentials are generated afresh
+  at first startup.
+
+Validation performed:
+- Python compilation passed.
+- Built-in selftest: 14 passed, 0 skipped, 0 failed.
+- Native GUI smoke test passed under a virtual display.
+- 12 targeted tests covering sign-in approvals, access exceptions, gateway rules,
+  and audit-anchor location passed.

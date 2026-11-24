@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+ztna_data/
+desktop_data_gui/
+data/
+certs/
+*.sqlite3
+*.db
+*.jsonl
+*.key
+*.pem
+.env
+selftest_data/
+desktop_gui_preferences.json

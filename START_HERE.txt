@@ -1,0 +1,48 @@
+ZTNA DESKTOP — START HERE
+=========================
+
+This package combines the native employee/manager desktop portals and newer
+access-control logic with a clean runtime state. It does not launch a browser
+or a localhost web page.
+
+WINDOWS
+-------
+1. Extract the ZIP completely.
+2. Open the extracted `ztna` folder.
+3. Double-click `START_ZTNA_GUI.bat`.
+4. Keep the terminal window open while the application runs.
+5. In the launcher window, choose Employee access or ZTNA manager.
+
+DEMO MANAGER LOGIN
+------------------
+Username: puja
+Password: puja123
+
+This is a demo-only manager credential. Do not expose this demo build to an
+untrusted network or use the demo credential for production.
+
+EMPLOYEE LOGINS
+---------------
+The first launch provisions fresh demo employee accounts. The application
+shows their randomly generated passwords and TOTP enrollment secrets once.
+Save that information securely before closing the one-time credentials window.
+The employee passwords from a previous ZIP are not reused, because the
+previous ZIP included runtime account/key files and those are intentionally
+not included in this clean package.
+
+TWO PORTALS
+-----------
+The employee and manager windows opened by this app share the same in-process
+state and audit chain. This is suitable for demonstrating coordination on one
+computer. It does NOT synchronize independent app instances across two laptops;
+that requires a shared authenticated backend.
+
+TROUBLESHOOTING
+---------------
+- Use Python 3.10+ with Tkinter installed.
+- Install packages with: `python -m pip install -r requirements-enterprise.txt`
+- If Windows cannot find `python`, install Python and enable "Add Python to PATH".
+- Runtime state is created under `ztna_data/` after launch. Back it up if you
+  need to preserve the lab accounts, audit history, and policies.
+- Do not share `ztna_data/`, signing keys, wrapping keys, or generated employee
+  credentials. This is a demo lab, not a production ZTNA deployment.

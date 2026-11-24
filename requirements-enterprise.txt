@@ -1,0 +1,9 @@
+# Optional FastAPI/OIDC enterprise API and its integration test suite
+fastapi>=0.110
+uvicorn[standard]>=0.27
+httpx>=0.27
+SQLAlchemy>=2.0
+PyJWT[crypto]>=2.8
+
+# Required by encrypted demo TOTP secret storage and demo TLS certificate generation
+cryptography>=42.0
