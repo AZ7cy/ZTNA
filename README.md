@@ -70,7 +70,14 @@ This is a **desktop lab/simulation**, not a production-ready remote access gatew
 
 Because the desktop GUI is standalone and intentionally does not run a network service, windows opened from one launcher share live state, but a separate launcher on another laptop does not. Cross-laptop live operation requires a shared authenticated backend over the LAN or a central service; it cannot be achieved by a standalone GUI alone.
 
-This package does **not** yet implement cross-laptop synchronization, a persistent manager account store with mandatory manager TOTP, or a full split of the 8,500-line engine/GUI into separate modules. The manager demo login (`puja` / `puja123`) remains demo-only. Device blocks are in-memory for the current process; use the database-backed enterprise/admin control plane for persistent production enforcement.
+This package does **not** yet implement cross-laptop synchronization or a persistent manager account store with mandatory manager TOTP. The manager demo login (`puja` / `puja123`) remains demo-only. Device blocks are in-memory for the current process; use the database-backed enterprise/admin control plane for persistent production enforcement.
+
+## Source layout
+
+`ztna_lab_v2.py` is the entry point and import name, as before. The code itself is split into 27 ordered parts in
+[`ztna_lab/`](ztna_lab/README.md) (configuration, crypto, audit chain, policy engine, HTTP gateway, enterprise API,
+DNS, GUI portals, ...). The entry point runs them in order in one shared namespace, so the program behaves exactly
+like the former single file. Keep the `ztna_lab` folder next to `ztna_lab_v2.py`.
 
 ## Tests
 

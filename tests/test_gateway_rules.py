@@ -2,7 +2,8 @@
 import ast, textwrap, unittest
 from pathlib import Path
 
-SRC = (Path(__file__).resolve().parent.parent / "ztna_lab_v2.py").read_text()
+# The engine source is split into ordered parts in ztna_lab/; read them as UTF-8 (the platform default may not be).
+SRC = "\n".join(p.read_text(encoding="utf-8") for p in sorted((Path(__file__).resolve().parent.parent / "ztna_lab").glob("[0-9][0-9]_*.py")))
 tree = ast.parse(SRC)
 ns = {}
 for node in tree.body:

@@ -1,0 +1,7 @@
+# Same line endings on every clone (Windows checkouts included): LF for source and docs, CRLF for batch files.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary
