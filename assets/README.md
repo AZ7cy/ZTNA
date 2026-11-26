@@ -2,8 +2,10 @@
 
 ## Logo
 
-Place the ZTNA logo image as `ztna_logo.png` in this directory.
+**Required:** Place the ZTNA logo image as `ztna_logo.png` in this directory for it to display in:
+- The GUI launcher (centered above the portal cards)
+- The GitHub README header
 
-The logo should be in PNG format and will be automatically displayed in the GUI launcher if present.
+The logo should be in PNG format with a transparent or dark background.
 
-Recommended size: 300-400px width for optimal display quality.
+Recommended size: 300-500px width for optimal display quality.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/ztna_logo.png" alt="ZTNA Logo" width="400"/>
+</p>
+
 # ZTNA Access Workspace — Native Desktop GUI
 
 This package integrates the employee portal and ZTNA manager console into the main `ztna.py` application as a **native Tkinter desktop GUI**. It does not open a browser, use a localhost URL, or start an HTTP listener for the GUI.
