@@ -1,5 +1,5 @@
-# Part 20 of ztna_lab_v2.py - lab DNS server and the dns command.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 20 of ztna.py - lab DNS server and the dns command.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

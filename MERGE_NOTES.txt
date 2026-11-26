@@ -2,7 +2,7 @@ MERGE NOTES
 ===========
 
 Main application:
-- `ztna_lab_v2.py` from the native desktop dual-portal improvements package.
+- `ztna.py` from the native desktop dual-portal improvements package.
 - Retains the employee/manager portal workflow, authentication and device checks,
   sign-in approval queue, access exceptions, audit chain, and manager controls.
 - Uses fresh runtime data on first launch; no runtime database, credential hash

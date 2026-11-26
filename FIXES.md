@@ -4,7 +4,7 @@ This document summarizes the bugs fixed after the initial import and module spli
 
 ## Commit Structure
 
-1. **4d1e04e** Split ztna_lab_v2.py into 27 ordered source parts
+1. **4d1e04e** Split ztna.py into 27 ordered source parts
 2. **ad4bcc0** Fix audit-log failures on Windows and after write errors
 3. **38ba420** Fix desktop sign-in, session and throttling bugs
 
@@ -38,7 +38,7 @@ This document summarizes the bugs fixed after the initial import and module spli
 
 ### Desktop Sign-In, Sessions and Throttling (38ba420)
 
-**B1. Plain `python ztna_lab_v2.py` gave 4 hard-coded devices, not 20**
+**B1. Plain `python ztna.py` gave 4 hard-coded devices, not 20**
 - **Impact**: 17 of the 20 demo employees could not sign in.
 - **Fix**: The full fixture list is now added whenever demo mode is on (regardless of when it was turned on).
 
@@ -93,8 +93,3 @@ Each fix group was tested against reproduction scripts that:
 1. Confirm the bug exists on the pre-fix code.
 2. Confirm the fix resolves it.
 3. Verify the fix doesn't break existing tests.
-
-Repro scripts are in `C:\Users\Puja\AppData\Local\Temp\ztna_scratch_main\r_*.py` and cover:
-- Audit rotation, write failures, anchor failures, lone surrogates, tampered lines.
-- Sign-in with expired sessions, failed database writes, late approvals, stale identity.
-- File lock wait, evaluate() thread safety, bad tunables, missing cryptography.

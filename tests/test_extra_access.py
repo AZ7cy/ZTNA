@@ -8,7 +8,7 @@ class ExtraAccessTests(unittest.TestCase):
     def setUpClass(cls):
         os.environ.update(ZTNA_DEMO="1", ZTNA_DEMO_OTP="1", ZTNA_DATA_DIR=tempfile.mkdtemp(prefix="ztna-xa-"))
         sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-        import ztna_lab_v2 as z
+        import ztna as z
         cls.z = z
         z.REQUESTED_MODE = "gui"; z.init_runtime("gui")
 

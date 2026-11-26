@@ -1,5 +1,5 @@
-# Part 10 of ztna_lab_v2.py - docker-compose template, embedded web pages, pooled HTTP server.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 10 of ztna.py - docker-compose template, embedded web pages, pooled HTTP server.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

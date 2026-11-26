@@ -1,5 +1,5 @@
-# Part 15 of ztna_lab_v2.py - optional FastAPI enterprise API: imports, settings, database models, replay and rate limits, request models.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 15 of ztna.py - optional FastAPI enterprise API: imports, settings, database models, replay and rate limits, request models.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

@@ -1,11 +1,11 @@
 # ZTNA Access Workspace — Native Desktop GUI
 
-This package integrates the employee portal and ZTNA manager console into the main `ztna_lab_v2.py` application as a **native Tkinter desktop GUI**. It does not open a browser, use a localhost URL, or start an HTTP listener for the GUI.
+This package integrates the employee portal and ZTNA manager console into the main `ztna.py` application as a **native Tkinter desktop GUI**. It does not open a browser, use a localhost URL, or start an HTTP listener for the GUI.
 
 ## Start on Windows
 
-1. Extract the ZIP completely.
-2. Install Python 3.10 or newer from python.org. Make sure the standard Tk/Tcl component is included.
+1. Install Python 3.10 or newer from python.org. Make sure the standard Tk/Tcl component is included.
+2. Install the cryptography package: `python -m pip install cryptography`
 3. Double-click `START_ZTNA_GUI.bat`.
 4. On first launch, a one-time dialog displays generated employee passwords and TOTP enrollment secrets. Save them securely; the application stores password hashes and encrypted TOTP values, not plaintext passwords.
 5. Dismiss the credentials dialog to reach the role selection screen.
@@ -15,7 +15,7 @@ You can also launch from a terminal:
 ```powershell
 $env:ZTNA_DEMO = "1"
 $env:ZTNA_DEMO_OTP = "1"
-python ztna_lab_v2.py gui
+python ztna.py gui
 ```
 
 ## Manager demo credentials
@@ -74,10 +74,10 @@ This package does **not** yet implement cross-laptop synchronization or a persis
 
 ## Source layout
 
-`ztna_lab_v2.py` is the entry point and import name, as before. The code itself is split into 27 ordered parts in
+`ztna.py` is the entry point and import name, as before. The code itself is split into 27 ordered parts in
 [`ztna_lab/`](ztna_lab/README.md) (configuration, crypto, audit chain, policy engine, HTTP gateway, enterprise API,
 DNS, GUI portals, ...). The entry point runs them in order in one shared namespace, so the program behaves exactly
-like the former single file. Keep the `ztna_lab` folder next to `ztna_lab_v2.py`.
+like the former single file. Keep the `ztna_lab` folder next to `ztna.py`.
 
 ## Tests
 
@@ -86,7 +86,7 @@ Built-in self-test:
 ```powershell
 $env:ZTNA_DEMO = "1"
 $env:ZTNA_DEMO_OTP = "1"
-python ztna_lab_v2.py selftest
+python ztna.py selftest
 ```
 
 The packaged code was checked for Python syntax. Targeted tests for sign-in approvals, temporary app exceptions, forced MFA, and the native GUI passed under a virtual display. The built-in self-test reported 9 passed, 5 skipped, 0 failed. The complete all-module test suite exceeded the available execution window and should be run locally before relying on this lab.

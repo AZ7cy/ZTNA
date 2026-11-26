@@ -1,5 +1,5 @@
-# Part 02 of ztna_lab_v2.py - crypto helpers, JWT, TOTP, password hashing, device posture keys, device-proof message format.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 02 of ztna.py - crypto helpers, JWT, TOTP, password hashing, device posture keys, device-proof message format.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

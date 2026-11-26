@@ -1,5 +1,5 @@
-# Part 03 of ztna_lab_v2.py - roles and demo roster, file locks, atomic JSON writes, TOTP secret encryption, user and device stores.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 03 of ztna.py - roles and demo roster, file locks, atomic JSON writes, TOTP secret encryption, user and device stores.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

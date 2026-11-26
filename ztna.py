@@ -4,22 +4,22 @@ The source is split into ordered parts in ztna_lab/ (see ztna_lab/README.md); th
 Importing the module does not create data directories, configure root logging, parse CLI args, or load persistent state. Runtime configuration is validated when main() or the ASGI lifespan starts.
 Production managed devices use ZTNA_MANAGED_DEVICES after signed posture verification. Default access decision = DENY.
 
-  python3 ztna_lab_v2.py                       GUI (prompts before enabling demo mode when ZTNA_DEMO is unset; demo OTP is separately opt-in)
-  python3 ztna_lab_v2.py server                stdlib HTTP/TLS server
-  python3 ztna_lab_v2.py enterprise (or api)   FastAPI/OIDC API
-  python3 ztna_lab_v2.py attack [URL]          red-team self-test
-  python3 ztna_lab_v2.py bench [URL]           benchmark -> results.csv
-  python3 ztna_lab_v2.py agent DEVICE key=value ... [URL]
-  python3 ztna_lab_v2.py iptables              print segmentation rules (dry run)
-  python3 ztna_lab_v2.py compose               write docker-compose.yml
-  python3 ztna_lab_v2.py verify                verify the audit chain (exit status for CI)
-  python3 ztna_lab_v2.py adduser               add a new local user securely (existing users are refused)
-  python3 ztna_lab_v2.py selftest              run isolated regression tests
-  python3 ztna_lab_v2.py probe URL [N] [MS]    latency probe: N GETs, MS ms apart; min/avg/p50/p95/p99/max/jitter
-  python3 ztna_lab_v2.py dns serve             lab DNS server (UDP, loopback:5353 by default, A/CNAME records)
-  python3 ztna_lab_v2.py dns list|add|cname|remove|query ...   manage records / query a DNS server
-  python3 ztna_lab_v2.py cli [COMMAND ...]     remote admin console for a running server (REPL or one-shot)
-  python3 ztna_lab_v2.py systemd [server|dns]  print a hardened systemd unit (dry run)
+  python3 ztna.py                       GUI (prompts before enabling demo mode when ZTNA_DEMO is unset; demo OTP is separately opt-in)
+  python3 ztna.py server                stdlib HTTP/TLS server
+  python3 ztna.py enterprise (or api)   FastAPI/OIDC API
+  python3 ztna.py attack [URL]          red-team self-test
+  python3 ztna.py bench [URL]           benchmark -> results.csv
+  python3 ztna.py agent DEVICE key=value ... [URL]
+  python3 ztna.py iptables              print segmentation rules (dry run)
+  python3 ztna.py compose               write docker-compose.yml
+  python3 ztna.py verify                verify the audit chain (exit status for CI)
+  python3 ztna.py adduser               add a new local user securely (existing users are refused)
+  python3 ztna.py selftest              run isolated regression tests
+  python3 ztna.py probe URL [N] [MS]    latency probe: N GETs, MS ms apart; min/avg/p50/p95/p99/max/jitter
+  python3 ztna.py dns serve             lab DNS server (UDP, loopback:5353 by default, A/CNAME records)
+  python3 ztna.py dns list|add|cname|remove|query ...   manage records / query a DNS server
+  python3 ztna.py cli [COMMAND ...]     remote admin console for a running server (REPL or one-shot)
+  python3 ztna.py systemd [server|dns]  print a hardened systemd unit (dry run)
 
 Authenticated GET /inspect shows what the gateway delivered to the server (client IP, headers, TLS); credentials are redacted.
 Authenticated lab endpoints: GET /headers (plain-text header dump), GET /download/N and PUT|POST /upload (size-capped
@@ -48,7 +48,7 @@ if sys.version_info < (3, 10):
 
 # The implementation lives in ztna_lab/ as ordered parts. They are executed in this order, all in THIS module's
 # namespace, so together they behave exactly like the original single file: module-level settings are rebound with
-# `global` at runtime and tests patch attributes such as ztna_lab_v2.audit, which separate modules could not share.
+# `global` at runtime and tests patch attributes such as ztna.audit, which separate modules could not share.
 _SOURCE_PARTS = (
     "01_config_and_runtime.py",
     "02_crypto_and_credentials.py",
@@ -96,7 +96,7 @@ def _load_source_parts():
         try:
             code = SourceFileLoader(name, path).get_code(name)
         except OSError as exc:
-            raise ImportError(f"cannot read {path} ({exc}); keep the ztna_lab folder next to ztna_lab_v2.py") from None
+            raise ImportError(f"cannot read {path} ({exc}); keep the ztna_lab folder next to ztna.py") from None
         exec(code, namespace)
 
 

@@ -1,5 +1,5 @@
-# Part 27 of ztna_lab_v2.py - command-line entry point main().
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 27 of ztna.py - command-line entry point main().
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

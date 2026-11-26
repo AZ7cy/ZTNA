@@ -9,7 +9,7 @@ class NativeGuiSmokeTests(unittest.TestCase):
             raise unittest.SkipTest("Tk GUI smoke test requires a display (use xvfb-run)")
         os.environ.update(ZTNA_DEMO="1", ZTNA_DEMO_OTP="1", ZTNA_DATA_DIR=tempfile.mkdtemp(prefix="ztna-gui-smoke-"))
         sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-        import ztna_lab_v2 as z
+        import ztna as z
         cls.z = z
         z.REQUESTED_MODE = "gui"
         z.init_runtime("gui")

@@ -27,7 +27,7 @@ except ImportError as exc:  # pragma: no cover - optional dependency suite
     raise unittest.SkipTest(f"enterprise test dependencies unavailable: {exc}")
 
 HERE = Path(__file__).resolve().parent
-SCRIPT = HERE.parent / "ztna_lab_v2.py"
+SCRIPT = HERE.parent / "ztna.py"
 _TEST_HOME = Path(tempfile.mkdtemp(prefix="ztna_enterprise_tests_"))
 _DATA_DIR = _TEST_HOME / "data"
 _DATABASE = _TEST_HOME / "enterprise.db"

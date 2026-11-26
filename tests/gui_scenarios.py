@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys
 import faketk
 tk = faketk.build()
 fd = types.SimpleNamespace(asksaveasfilename=lambda **k: os.path.join(os.environ["ZTNA_DATA_DIR"], "export.csv")); tk.filedialog = fd; sys.modules["tkinter.filedialog"] = fd
-import ztna_lab_v2 as z
+import ztna as z
 z.REQUESTED_MODE = "gui"; z.init_runtime("gui")
 cr = {u: p for u, p, _r, _s in z.DEMO_BOOTSTRAP_CREDENTIALS}
 dev = lambda u: next(d for d, v in z.DEVICES.items() if v["owner"] == u)

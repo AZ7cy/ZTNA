@@ -1,5 +1,5 @@
-# Part 16 of ztna_lab_v2.py - enterprise API: SIEM outbox, lifespan, middleware, OIDC identity, enterprise audit chain.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 16 of ztna.py - enterprise API: SIEM outbox, lifespan, middleware, OIDC identity, enterprise audit chain.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # Everything below exists only when the optional enterprise dependencies import (FASTAPI_AVAILABLE).
 # pyright: reportUndefinedVariable=false

@@ -1,5 +1,5 @@
-# Part 08 of ztna_lab_v2.py - legacy stdlib HTTP/TLS gateway: request handler H and all of its routes.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 08 of ztna.py - legacy stdlib HTTP/TLS gateway: request handler H and all of its routes.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

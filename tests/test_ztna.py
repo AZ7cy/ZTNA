@@ -16,10 +16,10 @@ HERE = Path(__file__).resolve().parent
 def _find_script():
     # Works from project/tests/ (normal layout) or with the test next to the script.
     for d in (HERE.parent, HERE):
-        if (d / "ztna_lab_v2.py").is_file():
-            return str(d / "ztna_lab_v2.py")
+        if (d / "ztna.py").is_file():
+            return str(d / "ztna.py")
     raise SystemExit(
-        "ztna_lab_v2.py not found next to or above this test file.\n"
+        "ztna.py not found next to or above this test file.\n"
         "Extract the whole zip first (do not run the test from inside the zip preview), "
         "then run from the project folder:\n    python -m unittest discover -s tests -v"
     )
@@ -658,7 +658,7 @@ class TestSystemdUnit(IsolatedLab):
             with self.subTest(kind=kind):
                 r = run(["systemd", kind], make_env(self.data))
                 self.assertEqual(r.returncode, 0, r.stderr)
-                for needle in ("NoNewPrivileges=yes", "ProtectSystem=strict", "User=ztna-lab", f"ztna_lab_v2.py {kind}", "EnvironmentFile=/etc/ztna-lab/config.env"):
+                for needle in ("NoNewPrivileges=yes", "ProtectSystem=strict", "User=ztna-lab", f"ztna.py {kind}", "EnvironmentFile=/etc/ztna-lab/config.env"):
                     self.assertIn(needle, r.stdout)
         self.assertIn("CAP_NET_BIND_SERVICE", run(["systemd", "dns"], make_env(self.data)).stdout)
         self.assertNotIn("CAP_NET_BIND_SERVICE", run(["systemd", "server"], make_env(self.data)).stdout)

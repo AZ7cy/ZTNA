@@ -1,5 +1,5 @@
-# Part 12 of ztna_lab_v2.py - sign-in approval queue and temporary application exceptions.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 12 of ztna.py - sign-in approval queue and temporary application exceptions.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

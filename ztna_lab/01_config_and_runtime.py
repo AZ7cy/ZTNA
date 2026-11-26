@@ -1,7 +1,7 @@
-# Part 01 of ztna_lab_v2.py - imports, optional Tk stub, logging, settings parsing, JWT keyring, runtime configuration, init_runtime().
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 01 of ztna.py - imports, optional Tk stub, logging, settings parsing, JWT keyring, runtime configuration, init_runtime().
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
-# `sys` is imported by ztna_lab_v2.py itself, before its Python version check.
+# `sys` is imported by ztna.py itself, before its Python version check.
 # pyright: reportUndefinedVariable=false
 
 import base64, csv, random, shutil, fnmatch, hashlib, hmac, io, ipaddress, json, math, os, re, secrets, ssl, sqlite3, statistics, struct, threading, time, uuid, logging, subprocess, heapq, queue, asyncio, signal, socket
@@ -11,7 +11,7 @@ import urllib.error, urllib.request, http.client
 # This is required for `uvicorn module:enterprise_app`, gunicorn workers and pytest.
 REQUESTED_MODE = None
 VALID_MODES = {"gui", "server", "enterprise", "attack", "bench", "agent", "iptables", "compose", "verify", "adduser", "selftest", "probe", "dns", "cli", "systemd"}
-USAGE = "usage: python ztna_lab_v2.py [gui|server|enterprise|api|attack|bench|agent|iptables|compose|verify|adduser|selftest|probe|dns|cli|systemd]"
+USAGE = "usage: python ztna.py [gui|server|enterprise|api|attack|bench|agent|iptables|compose|verify|adduser|selftest|probe|dns|cli|systemd]"
 from collections import Counter, OrderedDict, deque
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlsplit, quote
@@ -389,7 +389,7 @@ def init_runtime(mode, *, asgi=False):
         LOCAL_TZ = datetime.now().astimezone().tzinfo
     if DEMO:
         _ensure_demo_anchor(); _ensure_demo_jwt_key()
-        # DEVICES is filled at import time only if ZTNA_DEMO was already set then. `python ztna_lab_v2.py` (gui) turns demo
+        # DEVICES is filled at import time only if ZTNA_DEMO was already set then. `python ztna.py` (gui) turns demo
         # mode on later, in main(), and used to get just 4 hard-coded laptops: 17 of the 20 demo employees had no device.
         for device_id, fixture in FIXTURE_DEVICES.items():
             DEVICES.setdefault(device_id, {**fixture, "last_report": 0.0})

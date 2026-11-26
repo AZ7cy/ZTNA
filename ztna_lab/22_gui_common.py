@@ -1,5 +1,5 @@
-# Part 22 of ztna_lab_v2.py - desktop GUI shared pieces: theme, panels, scrolling, formatting helpers, portal base class, preferences.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 22 of ztna.py - desktop GUI shared pieces: theme, panels, scrolling, formatting helpers, portal base class, preferences.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

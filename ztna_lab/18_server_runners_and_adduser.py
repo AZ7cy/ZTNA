@@ -1,5 +1,5 @@
-# Part 18 of ztna_lab_v2.py - server entry points (enterprise API, legacy gateway) and the adduser command.
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 18 of ztna.py - server entry points (enterprise API, legacy gateway) and the adduser command.
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 

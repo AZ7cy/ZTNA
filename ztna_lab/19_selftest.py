@@ -1,5 +1,5 @@
-# Part 19 of ztna_lab_v2.py - built-in self-test (python ztna_lab_v2.py selftest).
-# Not a standalone module: ztna_lab_v2.py runs every part in order in one shared namespace, so names
+# Part 19 of ztna.py - built-in self-test (python ztna.py selftest).
+# Not a standalone module: ztna.py runs every part in order in one shared namespace, so names
 # defined in earlier parts are used here without imports. See ztna_lab/README.md.
 # pyright: reportUndefinedVariable=false
 
