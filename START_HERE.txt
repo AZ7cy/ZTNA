@@ -15,8 +15,8 @@ WINDOWS
 
 DEMO MANAGER LOGIN
 ------------------
-Username: puja
-Password: puja123
+Username: Ztna
+Password: Ztna123
 
 This is a demo-only manager credential. Do not expose this demo build to an
 untrusted network or use the demo credential for production.

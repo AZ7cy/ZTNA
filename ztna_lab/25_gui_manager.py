@@ -5,8 +5,8 @@
 
 # ------------------------------------------------------------------------------ manager side
 class ManagerPortal(PortalWindow):
-    MANAGER_DEMO_USER = "puja"
-    MANAGER_DEMO_PASSWORD = "puja123"
+    MANAGER_DEMO_USER = "Ztna"
+    MANAGER_DEMO_PASSWORD = "Ztna123"
 
     def __init__(self, app):
         super().__init__(app, "ZTNA Access Workspace — Manager Console", "1180x780", (940, 640))

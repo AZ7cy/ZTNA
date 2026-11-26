@@ -25,7 +25,7 @@ class NativeGuiSmokeTests(unittest.TestCase):
             self.assertTrue(hasattr(emp, "cb_user"))
             mgr = app.open_manager()
             app.update_idletasks(); app.update()
-            mgr.v_mu.set("puja"); mgr.v_mp.set("puja123"); mgr._signin()
+            mgr.v_mu.set("Ztna"); mgr.v_mp.set("Ztna123"); mgr._signin()
             app.update_idletasks(); app.update()
             self.assertIsNotNone(mgr.manager_user)
             self.assertTrue(hasattr(mgr, "req_tree"))

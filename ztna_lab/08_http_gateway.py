@@ -83,7 +83,7 @@ class H(BaseHTTPRequestHandler):
             return bool(record and record.get("role") == "manager" and record.get("exp", 0) > now)
 
     def manager_login(self, data):
-        # The requested puja/puja123 credential is deliberately demo-only. Production
+        # The requested Ztna/Ztna123 credential is deliberately demo-only. Production
         # deployments must use the normal administrator API key / enterprise identity.
         if not DEMO:
             return self.send(404, {"error": "demo manager login is disabled"})
@@ -95,8 +95,8 @@ class H(BaseHTTPRequestHandler):
                 MANAGER_LOGIN_FAILS.popleft()
             if len(MANAGER_LOGIN_FAILS) >= 12:
                 return self.send(429, {"error": "too many manager login attempts; wait a minute"})
-        expected_user = os.environ.get("ZTNA_MANAGER_USER", "puja")
-        expected_password = os.environ.get("ZTNA_MANAGER_PASSWORD", "puja123")
+        expected_user = os.environ.get("ZTNA_MANAGER_USER", "Ztna")
+        expected_password = os.environ.get("ZTNA_MANAGER_PASSWORD", "Ztna123")
         user = str(data.get("username", ""))[:64]
         password = str(data.get("password", ""))[:256]
         if not (_ct_eq(user, expected_user) & _ct_eq(password, expected_password)):

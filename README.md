@@ -20,8 +20,8 @@ python ztna_lab_v2.py gui
 
 ## Manager demo credentials
 
-- Username: `puja`
-- Password: `puja123`
+- Username: `Ztna`
+- Password: `Ztna123`
 
 These credentials are hard-coded for the isolated desktop demonstration only. Do not use them in a production deployment or expose demo mode to untrusted users. For non-demo mode, configure `ZTNA_DEMO=0`, a provisioned user store, and `ZTNA_MANAGER_USER` / `ZTNA_MANAGER_PASSWORD` for the separate desktop manager login.
 
@@ -70,7 +70,7 @@ This is a **desktop lab/simulation**, not a production-ready remote access gatew
 
 Because the desktop GUI is standalone and intentionally does not run a network service, windows opened from one launcher share live state, but a separate launcher on another laptop does not. Cross-laptop live operation requires a shared authenticated backend over the LAN or a central service; it cannot be achieved by a standalone GUI alone.
 
-This package does **not** yet implement cross-laptop synchronization or a persistent manager account store with mandatory manager TOTP. The manager demo login (`puja` / `puja123`) remains demo-only. Device blocks are in-memory for the current process; use the database-backed enterprise/admin control plane for persistent production enforcement.
+This package does **not** yet implement cross-laptop synchronization or a persistent manager account store with mandatory manager TOTP. The manager demo login (`Ztna` / `Ztna123`) remains demo-only. Device blocks are in-memory for the current process; use the database-backed enterprise/admin control plane for persistent production enforcement.
 
 ## Source layout
 
