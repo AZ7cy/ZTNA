@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ztna_logo.png" alt="ZTNA Logo" width="400"/>
+  <img src="assets/ztna_logo.png?v=2" alt="ZTNA Logo" width="400"/>
 </p>
 
 # ZTNA Access Workspace — Native Desktop GUI
