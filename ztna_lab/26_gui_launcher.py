@@ -26,18 +26,19 @@ class App(_PortalUI, tk.Tk):
         self._band("Secure access to your work", "")
         page = ttk.Frame(self, padding=(26, 22)); page.pack(fill="both", expand=True)
         
-        # Logo at the top (using tk.PhotoImage - no PIL required)
+        # Logo at the top
         try:
-            logo_path = os.path.join(os.path.dirname(__file__), "..", "assets", "ztna_logo.png")
+            # Simple path relative to current working directory
+            logo_path = os.path.join("assets", "ztna_logo.png")
             if os.path.exists(logo_path):
                 photo = tk.PhotoImage(file=logo_path)
-                # Subsample to resize (every 2nd pixel = half size, every 3rd = third size, etc)
-                photo = photo.subsample(3, 3)  # Reduce to ~1/3 size for better fit
+                # Subsample to resize (every 3rd pixel for ~1/3 size)
+                photo = photo.subsample(3, 3)
                 logo_label = ttk.Label(page, image=photo)
-                logo_label.image = photo  # keep reference to prevent garbage collection
+                logo_label.image = photo  # keep reference
                 logo_label.pack(pady=(0, 20))
         except Exception as e:
-            pass  # Logo is optional, fails silently if file missing
+            print(f"Logo could not be loaded: {e}")
         
         cards = ttk.Frame(page); cards.pack(fill="x", expand=True)
         cards.columnconfigure(0, weight=1, uniform="c"); cards.columnconfigure(1, weight=1, uniform="c")
