@@ -124,11 +124,15 @@ def db_init():
     except sqlite3.Error: pass
     prune_telemetry()
 def _prune_sessions_for_login_locked(user, now):
-    """Prune expired sessions and enforce per-user session caps; caller holds LOCK."""
+    """Prune expired sessions and enforce per-user session caps; caller holds LOCK.
+    Raises StateStoreError only when a LIVE session that is evicted for the cap cannot be revoked in the database."""
     for old_sid,v in list(SESSIONS.items()):
         if v.get("exp",0)<=now or v.get("abs_exp",0)<=now:
             SESSIONS.pop(old_sid,None)
-            db_exec_critical("UPDATE sessions SET revoked=1 WHERE sid=?",(old_sid,))
+            # Already expired: every token issued for it has expired too, so the revoked flag is housekeeping.
+            # A database error here used to abort an unrelated user's sign-in after their code was spent.
+            if not db_exec("UPDATE sessions SET revoked=1 WHERE sid=?",(old_sid,)):
+                logger.warning("expired session %s could not be marked revoked in the database", old_sid[:8])
     own=sorted(((sid,v.get("created",0)) for sid,v in SESSIONS.items() if v.get("user")==user),key=lambda x:x[1])
     while len(own)>=max(1,MAX_SESSIONS_PER_USER):
         old_sid,_=own.pop(0)
@@ -251,7 +255,7 @@ def telemetry_summary():
         out={"events":a[0] or 0,"allow":a[1] or 0,"stepup":a[2] or 0,"deny":a[3] or 0,"avg_risk":round(a[4] or 0,1),"alerts":n}; TELEMETRY_CACHE["summary"]=out; TELEMETRY_CACHE["summary_ts"]=now; return out
     except sqlite3.Error: return {"events":0,"allow":0,"stepup":0,"deny":0,"avg_risk":0,"alerts":0}
 def prune_telemetry():
-    days=max(1,int(os.environ.get("ZTNA_TELEMETRY_RETENTION_DAYS","30"))); cutoff=time.time()-days*86400
+    days=max(1,_env_int("ZTNA_TELEMETRY_RETENTION_DAYS",30,0,36500)); cutoff=time.time()-days*86400
     try:
         c=_db_connection(); c.execute("DELETE FROM access_events WHERE ts<?",(cutoff,)); c.execute("DELETE FROM security_alerts WHERE ts<?",(cutoff,)); c.execute("DELETE FROM policy_changes WHERE ts<?",(cutoff,)); c.commit()
     except sqlite3.Error as exc: logger.warning("telemetry retention failed: %s",exc)

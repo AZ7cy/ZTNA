@@ -343,6 +343,12 @@ def init_runtime(mode, *, asgi=False):
     _env_float("ZTNA_KDF_WAIT_SECONDS",2.0,error_type=error_type)
     _env_float("ZTNA_AUTH_HARD_LOCK_SECONDS",60.0,error_type=error_type)
     _env_float("ZTNA_AUTH_BACKOFF_BASE",0.25,error_type=error_type)
+    # These are read again where they are used (policy engine, exception queue, audit rotation, telemetry pruning);
+    # a bad value used to fail only there: every access decision raised, or a Tk callback raised SystemExit.
+    _env_int("ZTNA_RISK_BURST_N",40,1,100000,error_type=error_type)
+    _env_int("ZTNA_EXCEPTION_REQUEST_TTL",86400,60,30*86400,error_type=error_type)
+    _env_int("ZTNA_MAX_AUDIT_SEGMENTS",32,1,100000,error_type=error_type)
+    _env_int("ZTNA_TELEMETRY_RETENTION_DAYS",30,0,36500,error_type=error_type)
     if "H" in globals():
         H.CONNECTIONS=threading.BoundedSemaphore(_env_int("ZTNA_MAX_CONNECTIONS",32,1,10000,error_type=RuntimeError if asgi else SystemExit))
         try:
@@ -383,8 +389,10 @@ def init_runtime(mode, *, asgi=False):
         LOCAL_TZ = datetime.now().astimezone().tzinfo
     if DEMO:
         _ensure_demo_anchor(); _ensure_demo_jwt_key()
-        if not DEVICES:
-            DEVICES.update({"laptop-alice":{"owner":"alice","os_updated":True,"disk_encrypted":True,"firewall":True,"antivirus":True,"corporate_managed":True,"last_report":time.time()},"laptop-bob":{"owner":"bob","os_updated":True,"disk_encrypted":True,"firewall":True,"antivirus":True,"corporate_managed":True,"last_report":time.time()},"laptop-carol":{"owner":"carol","os_updated":True,"disk_encrypted":True,"firewall":True,"antivirus":True,"corporate_managed":True,"last_report":time.time()},"byod-bob":{"owner":"bob","os_updated":True,"disk_encrypted":False,"firewall":True,"antivirus":False,"corporate_managed":False,"last_report":time.time()}})
+        # DEVICES is filled at import time only if ZTNA_DEMO was already set then. `python ztna_lab_v2.py` (gui) turns demo
+        # mode on later, in main(), and used to get just 4 hard-coded laptops: 17 of the 20 demo employees had no device.
+        for device_id, fixture in FIXTURE_DEVICES.items():
+            DEVICES.setdefault(device_id, {**fixture, "last_report": 0.0})
     if mode=="gui" and not DEMO:
         # Standalone desktop mode has no HTTP listener. It gets a local-only
         # audit key, but does not silently provision demo users or demo OTPs.

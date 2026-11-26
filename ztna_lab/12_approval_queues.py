@@ -100,11 +100,19 @@ def claim_signin_request(rid):
     now=time.time()
     return _signin_write("UPDATE signin_requests SET consumed=1,closed_at=?,closed_reason='approval used: session opened' WHERE id=? AND status='approved' AND consumed=0 AND decided_at>=?",(now,rid,now-SIGNIN_APPROVAL_TTL))==1
 
+def release_signin_claim(rid):
+    """Undo claim_signin_request() when no session could be opened after all, so the record does not claim a session
+    that never existed and the employee can retry while the approval is still valid."""
+    return _signin_write("UPDATE signin_requests SET consumed=0,closed_at=NULL,closed_reason=NULL WHERE id=? AND status='approved' AND consumed=1",(rid,))==1
+
 def decide_signin_request(rid, approve, manager, note=""):
     """Manager decision. Returns the request row, or None if it was no longer pending. Audited; reverts if audit fails."""
     status="approved" if approve else "denied"; now=time.time()
-    if _signin_write("UPDATE signin_requests SET status=?,decided_by=?,decided_at=?,note=?,closed_at=?,closed_reason=? WHERE id=? AND status='pending'",
-                     (status,manager,now,(note or "")[:200],None if approve else now,None if approve else "denied by manager",rid))!=1:
+    # A request past its lifetime is closed as expired (and audited), not approved late: the manager's list may be
+    # up to a refresh old, and an approval given after the 10 minutes used to open a session.
+    _expire_signin_requests()
+    if _signin_write("UPDATE signin_requests SET status=?,decided_by=?,decided_at=?,note=?,closed_at=?,closed_reason=? WHERE id=? AND status='pending' AND ts>=?",
+                     (status,manager,now,(note or "")[:200],None if approve else now,None if approve else "denied by manager",rid,now-SIGNIN_REQUEST_TTL))!=1:
         return None
     row=get_signin_request(rid)
     try:

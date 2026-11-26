@@ -71,9 +71,11 @@ def selftest():
         hard_block=not reserve_auth_attempt("alice","198.51.100.10")
         release_auth_attempt("alice","203.0.113.20")
         other_ip=reserve_auth_attempt("alice","203.0.113.20")
-        # Inactivity decay must clear an old pair and allow a new attempt.
-        FAILS[k]=(6, time.time()+60, time.time()-601)
-        decayed=reserve_auth_attempt("alice","198.51.100.10")
+        # Inactivity decay must clear an old pair and allow a new attempt that counts from 1 again. (Its hard lock ran out
+        # long ago, as it always has after 10 idle minutes with the default lock; a configured lock that is still
+        # running is honoured.)
+        FAILS[k]=(6, time.time()-541, time.time()-601)
+        decayed=reserve_auth_attempt("alice","198.51.100.10") and FAILS.get(k,(0,))[0]==1
         results.append(("H5",pair_a and pair_b and hard_block and other_ip and decayed))
         # H6: enforce per-scope capacity, isolation, expiry and >32 requests/session.
         NONCES.clear(); NONCE_HEAP.clear(); _NONCE_SCOPE_COUNTS.clear()

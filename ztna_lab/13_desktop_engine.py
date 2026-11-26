@@ -74,7 +74,8 @@ class DesktopZTNA:
     def login(self, user, password, otp, device, location):
         ok, msg = self._authenticate(user, password, otp, device)
         if not ok: return False, msg
-        return self._open_session(user, device, location)
+        try: return self._open_session(user, device, location)
+        except StateStoreError: return False, "The session store is temporarily unavailable; sign in again shortly"
 
     def request_signin(self, user, password, otp, device, location):
         """Verify credentials, then send the sign-in to the manager queue. Returns (True, request_id) or (False, message)."""
@@ -100,13 +101,27 @@ class DesktopZTNA:
             if audit_allowed(f"{user}|{device}","blocked-login",limit=3,window=60):
                 self._audit(user=user, device=device, resource="login", decision="DENY", reasons=["approved sign-in refused: device was blocked after approval"])
             return False, "This device has been blocked by the ZTNA manager"
+        unavailable = (False, "The sign-in service is temporarily unavailable; try again in a moment")
+        # Make room (session cap) BEFORE using the approval: that step may need the database, and a failure after the
+        # claim used to leave an approval marked "used" with no session ("already used" on every retry).
+        try:
+            with LOCK: _prune_sessions_for_login_locked(user, time.time())
+        except StateStoreError: return unavailable
         try: claimed = claim_signin_request(rid)
-        except StateStoreError: return False, "The sign-in service is temporarily unavailable; try again in a moment"
+        except StateStoreError: return unavailable
         if not claimed:
             return False, "This approval was already used or has expired"
+        try:
+            ok, msg = self._open_session(row["user"], row["device"], row["location"],
+                                         extra_reasons=[f"sign-in approved by manager {row['decided_by']}"])
+        except StateStoreError:
+            ok, msg = unavailable
+        if not ok:                                           # nothing was opened: the approval stays usable until it expires
+            try: release_signin_claim(rid)
+            except StateStoreError: logger.error("sign-in approval %s could not be released after a failed sign-in", rid)
+            return ok, msg
         self.pending_request = None
-        return self._open_session(row["user"], row["device"], row["location"],
-                                  extra_reasons=[f"sign-in approved by manager {row['decided_by']}"])
+        return ok, msg
 
     def _open_session(self, user, device, location, extra_reasons=()):
         ip="desktop"
@@ -153,12 +168,12 @@ class DesktopZTNA:
         sid, sess = self.session
         with LOCK:
             if sid not in SESSIONS:
-                self.session=None
+                self._drop_session()
                 return False, "session revoked"
         if sess["exp"] <= time.time() or sess["abs_exp"] <= time.time():
             with LOCK: SESSIONS.pop(sid,None)
             db_exec("UPDATE sessions SET revoked=1 WHERE sid=?",(sid,))
-            self.session=None
+            self._drop_session()
             return False, "Session expired"
         if not reserve_auth_attempt(sess["user"], "desktop"):
             return False, "Authentication temporarily unavailable"
@@ -189,12 +204,12 @@ class DesktopZTNA:
         sid, sess = self.session
         with LOCK:
             if sid not in SESSIONS:
-                self.session=None
+                self._drop_session()
                 return {"decision":"DENY","error":"session revoked"}
         if sess["exp"] <= time.time() or sess["abs_exp"] <= time.time():
             with LOCK: SESSIONS.pop(sid, None)
             db_exec("UPDATE sessions SET revoked=1 WHERE sid=?",(sid,))
-            self.session = None
+            self._drop_session()
             return {"decision": "DENY", "error": "session expired"}
         if resource not in RESOURCES:
             return {"decision": "DENY", "error": "unknown resource"}
@@ -228,6 +243,11 @@ class DesktopZTNA:
         else:
             result["error"] = "access denied"
         return result
+
+    def _drop_session(self):
+        """The session ended (revoked or expired): forget the identity too, so nothing more can be done in its name."""
+        self.session = None
+        self.user = self.device = None
 
     def logout(self):
         if self.session:

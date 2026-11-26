@@ -8,9 +8,12 @@ REQ_TIMES={}      # "user|device" -> recent request timestamps (suspicious reque
 SEEN_DEV={}       # user -> devices that have completed a login for that account since start
 def _burst_signal(sess,dev):
     """Return extra risk (0/15/30) and a signal text for an unusually high request rate on this user+device."""
-    n_lim=max(1,int(os.environ.get("ZTNA_RISK_BURST_N","40") or 40)); now=time.time()
-    q=REQ_TIMES.setdefault(f"{sess.get('user')}|{dev}",deque(maxlen=max(500,n_lim*4))); q.append(now)
-    n=sum(1 for t in q if now-t<10)
+    n_lim=_env_int("ZTNA_RISK_BURST_N",40,1,100000); now=time.time()
+    # evaluate() runs on the gateway's worker threads: counting while another thread appends raised
+    # "deque mutated during iteration" (an HTTP 500 with no audit entry).
+    with LOCK:
+        q=REQ_TIMES.setdefault(f"{sess.get('user')}|{dev}",deque(maxlen=max(500,n_lim*4))); q.append(now)
+        n=sum(1 for t in q if now-t<10)
     if n>3*n_lim: return 30,f"request burst ({n} in 10s)"
     if n>n_lim: return 15,f"request burst ({n} in 10s)"
     return 0,None

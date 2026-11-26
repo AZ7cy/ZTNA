@@ -41,6 +41,10 @@ def main(argv=None):
         os.environ.setdefault("ZTNA_DEMO", "1")
         if os.environ.get("ZTNA_DEMO") == "1":
             os.environ.setdefault("ZTNA_DEMO_OTP", "1")
+            # Demo accounts are provisioned with encrypted TOTP secrets. Say so up front instead of failing with a
+            # traceback after the credentials were generated (the launcher then blamed Python/Tkinter).
+            if not _cryptography_available():
+                raise SystemExit(f"The desktop GUI cannot start: {CRYPTOGRAPHY_MISSING}")
 
     init_runtime(mode)
 

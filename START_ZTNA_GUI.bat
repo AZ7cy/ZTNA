@@ -13,7 +13,9 @@ if %errorlevel%==0 (
 )
 if errorlevel 1 (
   echo.
-  echo ZTNA exited with an error. Check Python 3.10+ and Tkinter installation.
+  echo ZTNA exited with an error ^(see the message above^).
+  echo It needs Python 3.10+ with Tkinter, and the cryptography package:
+  echo     python -m pip install cryptography
   pause
 )
 endlocal

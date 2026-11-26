@@ -356,6 +356,7 @@ class H(BaseHTTPRequestHandler):
             try: _persist_users()
             except Exception:
                 logger.exception("could not persist upgraded password hash")
+                refund_auth_attempt(u,ip)                # our storage failed, not the user's credentials
                 return self.send(503,{"error":"account store unavailable; login refused"})
         dev=str(d.get("device_id",""))[:64]
         dev_ok=bool(usr and pw_ok and dev in DEVICES and DEVICES[dev]["owner"]==u)
@@ -378,16 +379,13 @@ class H(BaseHTTPRequestHandler):
             new_dev=dev not in SEEN_DEV.setdefault(u,set()); SEEN_DEV[u].add(dev)
         now=time.time(); prev=LASTLOC.get(u); sid=secrets.token_hex(12); pop_salt=_new_session_salt(); key=_derive_session_key(sid,pop_salt)
         sess={"user":u,"device":dev,"location":loc,"exp":now+TOKEN_TTL,"abs_exp":now+_env_int("ZTNA_SESSION_MAX",3600,1,30*86400),"mfa_at":now,"travel":bool(prev and prev[0]!=loc and now-prev[1]<300),"auth_ip":ip,"location_at":now,"created":now,"key":key,"new_device":new_dev}
-        with LOCK:
-            for old_key,v in list(SESSIONS.items()):
-                if v["exp"]<=now or v["abs_exp"]<=now:
-                    SESSIONS.pop(old_key,None)
-                    db_exec_critical("UPDATE sessions SET revoked=1 WHERE sid=?",(old_key,))
-            own=sorted(((k,v.get("created",0)) for k,v in SESSIONS.items() if v["user"]==u),key=lambda x:x[1])
-            while len(own)>=max(1,MAX_SESSIONS_PER_USER):
-                old_sid,_=own.pop(0); SESSIONS.pop(old_sid,None)
-                db_exec_critical("UPDATE sessions SET revoked=1 WHERE sid=?",(old_sid,))
-            SESSIONS[sid]=sess; LASTLOC[u]=(loc,now); release_auth_attempt(u,ip)
+        try:
+            with LOCK:
+                _prune_sessions_for_login_locked(u,now)      # same expiry/cap rules as the desktop sign-in
+                SESSIONS[sid]=sess; LASTLOC[u]=(loc,now); release_auth_attempt(u,ip)
+        except StateStoreError:
+            refund_auth_attempt(u,ip)
+            return self.send(503,{"error":"state store unavailable; action refused"})
         try: db_exec_critical("INSERT OR REPLACE INTO sessions(sid,user,device,location,created,expires,revoked,pop_key,mfa_at) VALUES(?,?,?,?,?,?,0,?,?)",(sid,u,dev,loc,now,sess["abs_exp"],pop_salt,now))
         except StateStoreError:
             with LOCK: SESSIONS.pop(sid,None)

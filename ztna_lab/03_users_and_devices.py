@@ -73,18 +73,17 @@ def _file_lock(path, timeout=None):
             if os.fstat(fd).st_size == 0:
                 os.write(fd, b"0")
             os.lseek(fd, 0, os.SEEK_SET)
-            if timeout is None:
-                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
-            else:
-                deadline = time.monotonic() + timeout
-                while True:
-                    try:
-                        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-                        break
-                    except OSError:
-                        if time.monotonic() >= deadline:
-                            raise TimeoutError(f"timed out waiting for lock {lock_path}") from None
-                        time.sleep(0.05)
+            # LK_LOCK is not a blocking lock: it retries 10 times, once a second, then raises OSError ("Resource
+            # deadlock avoided"). Poll LK_NBLCK instead; with timeout=None there is no deadline.
+            deadline = None if timeout is None else time.monotonic() + timeout
+            while True:
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    if deadline is not None and time.monotonic() >= deadline:
+                        raise TimeoutError(f"timed out waiting for lock {lock_path}") from None
+                    time.sleep(0.05)
             try:
                 yield
             finally:
@@ -154,11 +153,21 @@ def _totp_wrap_key():
         _fsync_dir(path)
         return key
 
+CRYPTOGRAPHY_MISSING = ("the 'cryptography' package is required: it encrypts the stored authenticator (TOTP) secrets. "
+                        "Install it with:  python -m pip install cryptography")
+
+def _cryptography_available():
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
 def _encrypt_totp(secret):
     try:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError:
-        raise RuntimeError("TOTP encryption requires cryptography; install requirements-enterprise.txt") from None
+        raise RuntimeError(CRYPTOGRAPHY_MISSING) from None
     nonce = secrets.token_bytes(12)
     cipher = AESGCM(_totp_wrap_key()).encrypt(nonce, str(secret).encode(), b"ztna-totp-v1")
     return "v1:" + base64.urlsafe_b64encode(nonce + cipher).decode().rstrip("=")
@@ -168,6 +177,9 @@ def _decrypt_totp(value):
     if not value.startswith("v1:"): return value  # one-time migration of legacy plaintext files
     try:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:            # used to be reported as a wrong wrapping key
+        raise SystemExit(f"cannot decrypt TOTP secrets: {CRYPTOGRAPHY_MISSING}") from None
+    try:
         blob = base64.urlsafe_b64decode(value[3:] + "=" * ((4-len(value[3:])%4)%4))
         if len(blob) < 29: raise ValueError
         return AESGCM(_totp_wrap_key()).decrypt(blob[:12], blob[12:], b"ztna-totp-v1").decode()

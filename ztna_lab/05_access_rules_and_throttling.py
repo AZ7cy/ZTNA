@@ -78,7 +78,7 @@ def reserve_auth_attempt(u, ip):
         # Expensive whole-table cleanup runs at most once per 10 seconds.
         if now-AUTH_PRUNE_LAST>=10.0:
             for key,(count,until,last) in list(FAILS.items()):
-                if now-last > 600 or count <= 0: FAILS.pop(key,None)
+                if (now-last > 600 and now >= until) or count <= 0: FAILS.pop(key,None)     # never drop an active lock
             for key,q in list(USERFAIL.items()):
                 while q and now-q[0]>=600: q.popleft()
                 if not q: USERFAIL.pop(key,None)
@@ -86,7 +86,9 @@ def reserve_auth_attempt(u, ip):
                 if now-ts>3600: LASTLOC.pop(user,None)
             AUTH_PRUNE_LAST=now
         count,until,last=FAILS.get(k,(0,0,now))
-        if now-last>600:
+        # Ten quiet minutes reset the counter, but not while a hard lock is still running: a ZTNA_AUTH_HARD_LOCK_SECONDS
+        # above 600 used to be cut short to 600 s.
+        if now-last>600 and now>=until:
             count=0
             FAILS.pop(k,None)
             until=0
@@ -95,7 +97,9 @@ def reserve_auth_attempt(u, ip):
         # Reserve the attempt before password verification. Exponential backoff
         # prevents parallel guesses from racing through the five-attempt limit.
         next_count=count+1
-        base=max(0.05,_env_float("ZTNA_AUTH_BACKOFF_BASE",0.25)); backoff=min(8.0,base*(2.0**max(0,next_count-1)))
+        # The exponent is capped: 2.0**1024 raises OverflowError, which after ~1,000 throttled guesses turned every
+        # further attempt (including the real user's) into an internal error.
+        base=max(0.05,_env_float("ZTNA_AUTH_BACKOFF_BASE",0.25)); backoff=min(8.0,base*(2.0**min(max(0,next_count-1),16)))
         FAILS[k]=(next_count,now+backoff,now)
         return True
 
