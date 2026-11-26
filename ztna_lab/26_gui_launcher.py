@@ -25,14 +25,33 @@ class App(_PortalUI, tk.Tk):
     def _build_hub(self):
         self._band("Secure access to your work", "")
         page = ttk.Frame(self, padding=(26, 22)); page.pack(fill="both", expand=True)
+        
+        # Logo at the top
+        try:
+            logo_path = os.path.join(os.path.dirname(__file__), "..", "assets", "ztna_logo.png")
+            if os.path.exists(logo_path):
+                from PIL import Image, ImageTk
+                img = Image.open(logo_path)
+                img = img.resize((300, int(300 * img.height / img.width)), Image.Resampling.LANCZOS)
+                photo = ImageTk.PhotoImage(img)
+                logo_label = ttk.Label(page, image=photo)
+                logo_label.image = photo  # keep reference
+                logo_label.pack(pady=(0, 20))
+        except Exception:
+            pass  # Logo is optional
+        
         cards = ttk.Frame(page); cards.pack(fill="x", expand=True)
         cards.columnconfigure(0, weight=1, uniform="c"); cards.columnconfigure(1, weight=1, uniform="c")
-        emp = Panel(cards, "Employee", padding=22); emp.grid(row=0, column=0, sticky="nsew", padx=(0, 9))
-        ttk.Label(emp.body, text="Employee access", style="Section.TLabel").pack(anchor="w", pady=(0, 14))
-        ttk.Button(emp.body, text="Open employee sign-in  →", style="Primary.TButton", command=self.open_employee).pack(anchor="w")
-        mgr = Panel(cards, "Manager", padding=22); mgr.grid(row=0, column=1, sticky="nsew", padx=(9, 0))
+        
+        # Manager card first (row 0)
+        mgr = Panel(cards, "Manager", padding=22); mgr.grid(row=0, column=0, sticky="nsew", padx=(0, 9))
         ttk.Label(mgr.body, text="ZTNA manager console", style="Section.TLabel").pack(anchor="w", pady=(0, 14))
         ttk.Button(mgr.body, text="Open manager console  →", style="Primary.TButton", command=self.open_manager).pack(anchor="w")
+        
+        # Employee card second (row 0, column 1)
+        emp = Panel(cards, "Employee", padding=22); emp.grid(row=0, column=1, sticky="nsew", padx=(9, 0))
+        ttk.Label(emp.body, text="Employee access", style="Section.TLabel").pack(anchor="w", pady=(0, 14))
+        ttk.Button(emp.body, text="Open employee sign-in  →", style="Primary.TButton", command=self.open_employee).pack(anchor="w")
         both = ttk.Frame(page); both.pack(fill="x", pady=(14, 0))
         ttk.Button(both, text="Open both side by side", command=self.open_both).pack(side="left")
         self.v_hub = tk.StringVar()
